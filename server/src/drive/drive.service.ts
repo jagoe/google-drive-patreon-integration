@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import {google} from 'googleapis'
 import {Readable} from 'stream'
-import {DriveFile} from './drive-file.entity'
+import {DriveFile, DriveFileTypes} from './drive-file.entity'
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 const DRIVE_VERSION = 'v3'
@@ -25,50 +25,67 @@ export class DriveService {
   public async fileExists(fileId: string): Promise<boolean> {
     const file = await this.getDetails(fileId, 'id, mimeType')
 
-    return file?.id !== undefined && !this.isFolder(file?.mimeType)
+    return file?.id !== undefined && file?.type !== DriveFileTypes.Folder
   }
 
   public async folderExists(fileId: string): Promise<boolean> {
     const file = await this.getDetails(fileId, 'id, mimeType')
 
-    return file?.id !== undefined && this.isFolder(file?.mimeType)
+    return file?.id !== undefined && file?.type === DriveFileTypes.Folder
   }
 
   public async getFiles({directoryId, recurse}: {directoryId: string, recurse: boolean}): Promise<DriveFile[]> {
     directoryId = directoryId || this.ROOT_DIRECTORY_ID
 
     const response = await this.drive.files.list({
-      orderBy: 'name asc',
       q: `'${directoryId}' in parents`,
     })
-    const rootFolders = response.data.files
-    const fileStructure = rootFolders.map(async ({id, name, mimeType, thumbnailLink}) => {
-      const file: DriveFile = {
-        id,
-        name,
-        mimeType,
-        thumbnailLink,
+    const files = response.data.files
+    const fileStructure = files.map(async (file) => {
+      const details = await this.getDetails(file.id, 'iconLink')
+
+      const driveFile = new DriveFile(
+        file.id,
+        file.name,
+        file.mimeType,
+        details?.iconLink,
+      )
+
+      if (recurse && driveFile.type === DriveFileTypes.Folder) {
+        driveFile.files = await this.getFiles({directoryId: file.id, recurse})
       }
 
-      if (recurse && this.isFolder(mimeType)) {
-        file.files = await this.getFiles({directoryId: id, recurse})
-      }
-
-      return file
+      return driveFile
     })
 
-    return Promise.all(fileStructure)
+    return (await Promise.all(fileStructure)).sort((a, b) => {
+      if (a.type === DriveFileTypes.Folder && b.type !== DriveFileTypes.Folder) {
+        return -1
+      }
+
+      if (a.type !== DriveFileTypes.Folder && b.type === DriveFileTypes.Folder) {
+        return 1
+      }
+
+      return a.name.localeCompare(b.name)
+    })
   }
 
   public async getDetails(fileId: string, fields: string): Promise<Partial<DriveFile>> {
     const response = await this.drive.files.get({
       fileId,
       fields,
-    }).catch(() => {
+    }).catch((err) => {
+      console.error(err)
+
       return null
     })
 
-    return response?.data as Partial<DriveFile>
+    if (response === null) {
+      return null
+    }
+
+    return new DriveFile(fileId, response.data.name, response.data.mimeType, response.data.iconLink)
   }
 
   public async download(fileId: string): Promise<Readable> {
@@ -84,9 +101,5 @@ export class DriveService {
     })
 
     return response.data
-  }
-
-  private isFolder(mimeType: string): boolean {
-    return mimeType === 'application/vnd.google-apps.folder'
   }
 }

@@ -1,8 +1,9 @@
-import { Controller, Get, HttpException, Param, StreamableFile } from '@nestjs/common'
+import { ClassSerializerInterceptor, Controller, Get, HttpException, Param, StreamableFile, UseInterceptors } from '@nestjs/common'
 import { DriveService } from './drive.service'
 import { DriveFile } from './drive-file.entity'
 
 @Controller('drive')
+@UseInterceptors(ClassSerializerInterceptor)
 export class DriveController {
   constructor(private _driveService: DriveService) {}
 
