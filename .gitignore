@@ -1,0 +1,11 @@
+# IDEs
+.vscode
+
+# temp files
+*.tmp
+*.tmp.*
+
+# secrets
+*.secret
+*.secret.*
+.env
