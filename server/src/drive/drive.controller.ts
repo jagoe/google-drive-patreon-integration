@@ -30,7 +30,7 @@ export class DriveController {
     const stream = await this._driveService.download(fileId)
 
     return new StreamableFile(stream, {
-      disposition: `attachment; filename="${file.name}"`,
+      disposition: `attachment; filename=${file.name}`,
       type: file.mimeType,
     })
   }
