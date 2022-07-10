@@ -9,3 +9,6 @@
 *.secret
 *.secret.*
 .env
+
+# logs
+*.log

@@ -60,7 +60,7 @@
   }
 </script>
 
-<h1>{currentDirectory.name}</h1>
+<h1 class="text-xl">{currentDirectory.name}</h1>
 
 {#await loading}
   <div>Loading...</div>
@@ -68,13 +68,23 @@
   <ul>
     {#if parentDirectories.length > 0}
       <li>
-        <span class="link" on:click={() => navigateToParent()}>...</span>
+        <span
+          class="cursor-pointer underline decoration-sky-500"
+          on:click={() => navigateToParent()}>...</span
+        >
       </li>
     {/if}
     {#each files as file (file.id)}
       <li>
-        <span class="link" on:click={() => clickEntry(file)}>
-          <img src={file.iconLink} alt={file.name} />
+        <span
+          class="cursor-pointer underline decoration-sky-500"
+          on:click={() => clickEntry(file)}
+        >
+          <img
+            class="inline align-baseline"
+            src={file.iconLink}
+            alt={file.name}
+          />
           {file.name}
         </span>
       </li>
@@ -83,13 +93,4 @@
 {/await}
 
 <style>
-  ul {
-    list-style: none;
-    padding: 0;
-  }
-
-  .link {
-    cursor: pointer;
-    color: darkblue;
-  }
 </style>

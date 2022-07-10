@@ -16,5 +16,9 @@ module.exports = {
 		browser: true,
 		es2017: true,
 		node: true
+	},
+	rules: {
+    'quotes': ['error', 'single'],
+    'semi': ['error', 'never'],
 	}
 };
